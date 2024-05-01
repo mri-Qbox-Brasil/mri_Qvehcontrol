@@ -282,7 +282,7 @@ if UseCommands then
 		EngineControl()
 	end, false)
 
-	RegisterKeyMapping('engine', 'Turn Engine ON / OFF', 'keyboard', 'G')
+	RegisterKeyMapping('engine', 'Turn Engine ON / OFF', 'keyboard', 'Z')
 
 	-- DOORS
 	TriggerEvent('chat:addSuggestion', '/door', 'Open/Close Vehicle Door', {
