@@ -111,7 +111,7 @@ end)
 function EngineControl()
     local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
     if vehicle ~= nil and vehicle ~= 0 and GetPedInVehicleSeat(vehicle, 0) then
-		QBCore.Functions.Progressbar("engine", "Toggling Engine", 1500, false, true, {
+		QBCore.Functions.Progressbar("engine", (GetIsVehicleEngineRunning(vehicle) and "Desligando" or "Ligando") .. " Motor", 1500, false, true, {
 			disableMovement = false,
 			disableCarMovement = false,
 			disableMouse = false,
@@ -122,6 +122,7 @@ function EngineControl()
 		end)
     end
 end
+
 
 function InteriorLightControl()
 	local playerPed = GetPlayerPed(-1)
@@ -264,7 +265,7 @@ end
 -----------------------------------------------------------------------------
 if UseCommands then
 	-- ENGINE
-	TriggerEvent('chat:addSuggestion', '/engine', 'Start/Stop Engine')
+	TriggerEvent('chat:addSuggestion', '/engine', 'Ligar / Desligar Motor')
 
 	--[[RegisterCommand("engine", function(source, args, rawCommand)
 		QBCore.Functions.Progressbar("switching_engine", "Engine...", math.random(3000, 3000), false, true, {
@@ -282,11 +283,11 @@ if UseCommands then
 		EngineControl()
 	end, false)
 
-	RegisterKeyMapping('engine', 'Turn Engine ON / OFF', 'keyboard', 'Z')
+	RegisterKeyMapping('engine', 'Ligar / Desligar motor', 'keyboard', 'Z')
 
 	-- DOORS
-	TriggerEvent('chat:addSuggestion', '/door', 'Open/Close Vehicle Door', {
-		{ name="ID", help="1) Driver, 2) Passenger, 3) Driver Side Rear, 4) Passenger Side Rear" }
+	TriggerEvent('chat:addSuggestion', '/door', 'Abrir / Fechar porta do veículo', {
+		{ name="ID", help="1) Motorista, 2) Passageiro, 3) Atrás do motorista, 4) Atrás do passageiro" }
 	})
 
 	RegisterCommand("door", function(source, args, rawCommand)
@@ -302,20 +303,20 @@ if UseCommands then
 				DoorControl(3)
 			end
 		else
-			TriggerEvent("chatMessage", "Usage: ", {255, 0, 0}, "/door [door id]")
+			TriggerEvent("chatMessage", "Uso: ", {255, 0, 0}, "/door [id da porta]")
 		end
 	end, false)
 
 	-- SEAT
-	TriggerEvent('chat:addSuggestion', '/seat', 'Move to a seat', {
-		{ name="ID", help="1) Driver, 2) Passenger, 3) Driver Side Rear, 4) Passenger Side Rear" }
+	TriggerEvent('chat:addSuggestion', '/seat', 'Ir para um assento', {
+		{ name="ID", help="1) Motorista, 2) Passageiro, 3) Atrás do motorista, 4) Atrás do passageiro" }
 	})
 
 	RegisterCommand("seat", function(source, args, rawCommand)
 		local seatID = tonumber(args[1])
 		if seatID ~= nil then
 			if seatID == 1 then
-				QBCore.Functions.Progressbar("switching_seats", "Switching Seats...", math.random(3000, 3000), false, true, {
+				QBCore.Functions.Progressbar("switching_seats", "Mudando de assento...", math.random(3000, 3000), false, true, {
 					disableMovement = false,
 					disableCarMovement = false,
 					disableMouse = true,
@@ -325,7 +326,7 @@ if UseCommands then
 					SeatControl(-1)
 				end)
 			elseif seatID == 2 then
-				QBCore.Functions.Progressbar("switching_seats", "Switching Seats...", math.random(3000, 3000), false, true, {
+				QBCore.Functions.Progressbar("switching_seats", "Mudando de assento...", math.random(3000, 3000), false, true, {
 					disableMovement = false,
 					disableCarMovement = false,
 					disableMouse = true,
@@ -335,7 +336,7 @@ if UseCommands then
 					SeatControl(0)
 				end)
 			elseif seatID == 3 then
-				QBCore.Functions.Progressbar("switching_seats", "Switching Seats...", math.random(3000, 3000), false, true, {
+				QBCore.Functions.Progressbar("switching_seats", "Mudando de assento...", math.random(3000, 3000), false, true, {
 					disableMovement = false,
 					disableCarMovement = false,
 					disableMouse = true,
@@ -345,7 +346,7 @@ if UseCommands then
 					SeatControl(1)
 				end)
 			elseif seatID == 4 then
-				QBCore.Functions.Progressbar("switching_seats", "Switching Seats...", math.random(3000, 3000), false, true, {
+				QBCore.Functions.Progressbar("switching_seats", "Mudando de assento...", math.random(3000, 3000), false, true, {
 					disableMovement = false,
 					disableCarMovement = false,
 					disableMouse = false,
@@ -361,13 +362,13 @@ if UseCommands then
 	end, false)
 
 	-- WINDOWS
-	TriggerEvent('chat:addSuggestion', '/window', 'Roll Up/Down Window', {
-		{ name="ID", help="1) Driver, 2) Passenger, 3) Driver Side Rear, 4) Passenger Side Rear" }
+	TriggerEvent('chat:addSuggestion', '/window', 'Abaixar / Subir o vidro', {
+		{ name="ID", help="1) Motorista, 2) Passageiro, 3) Atrás do motorista, 4) Atrás do passageiro" }
 	})
 
 	RegisterCommand("window", function(source, args, rawCommand)
 		local windowID = tonumber(args[1])
-		
+
 		if windowID ~= nil then
 			if windowID == 1 then
 				WindowControl(0, 0)
@@ -379,40 +380,40 @@ if UseCommands then
 				WindowControl(3, 3)
 			end
 		else
-			TriggerEvent("chatMessage", "Usage: ", {255, 0, 0}, "/window [door id]")
+			TriggerEvent("chatMessage", "Uso: ", {255, 0, 0}, "/window [id da porta]")
 		end
 	end, false)
 
 	-- HOOD
-	TriggerEvent('chat:addSuggestion', '/hood', 'Open/Close Hood')
+	TriggerEvent('chat:addSuggestion', '/hood', 'Abrir / Fechar Capô')
 
 	RegisterCommand("hood", function(source, args, rawCommand)
 		DoorControl(4)
 	end, false)
 
 	-- TRUNK
-	TriggerEvent('chat:addSuggestion', '/trunk', 'Open/Close Trunk')
+	TriggerEvent('chat:addSuggestion', '/trunk', 'Abrir / Fechar Porta malas')
 
 	RegisterCommand("trunk", function(source, args, rawCommand)
 		DoorControl(5)
 	end, false)
 
 	-- FRONT WINDOWS
-	TriggerEvent('chat:addSuggestion', '/windowfront', 'Roll Up/Down Front Windows')
+	TriggerEvent('chat:addSuggestion', '/windowfront', 'Abaixar / Subir vidros frontais')
 
 	RegisterCommand("windowfront", function(source, args, rawCommand)
 		FrontWindowControl()
 	end, false)
 
 	-- BACK WINDOWS
-	TriggerEvent('chat:addSuggestion', '/windowback', 'Roll Up/Down Back Windows')
+	TriggerEvent('chat:addSuggestion', '/windowback', 'Abaixar / Subir vidros traseiros')
 
 	RegisterCommand("windowback", function(source, args, rawCommand)
 		BackWindowControl()
 	end, false)
 
 	-- ALL WINDOWS
-	TriggerEvent('chat:addSuggestion', '/windowall', 'Roll Up/Down All Windows')
+	TriggerEvent('chat:addSuggestion', '/windowall', 'Abaixar / Subir todos os vidros')
 
 	RegisterCommand("windowall", function(source, args, rawCommand)
 		AllWindowControl()
