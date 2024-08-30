@@ -279,11 +279,11 @@ if UseCommands then
 		end)
 	end, false)]]--
 
-	RegisterCommand("engine", function(source, args, rawCommand)
-		EngineControl()
-	end, false)
+	-- RegisterCommand("engine", function(source, args, rawCommand)
+	-- 	EngineControl()
+	-- end, false)
 
-	RegisterKeyMapping('engine', 'Ligar / Desligar motor', 'keyboard', 'Z')
+	-- RegisterKeyMapping('engine', 'Ligar / Desligar motor', 'keyboard', 'Z')
 
 	-- DOORS
 	TriggerEvent('chat:addSuggestion', '/door', 'Abrir / Fechar porta do veículo', {
