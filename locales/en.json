@@ -1,0 +1,11 @@
+{
+  "vehicle": "VEHICLE",
+  "unknown": "UNKNOWN",
+  "engine": "ENGINE",
+  "emergency": "Emergency",
+  "lock": "Lock",
+  "seat": "Seat",
+  "interior_light": "INTERIOR",
+  "light": "Light",
+  "lights": "Lights"
+}

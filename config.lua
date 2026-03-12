@@ -6,3 +6,10 @@ DisableSeatShuffle = true
 
 -- Keep vehicle running when exit driver with long F key [ ture/false ]
 LeaveRunning = true
+
+-- UI Language Selection ('pt', 'en')
+Locale = 'pt'
+
+-- Key Mapping Configuration
+UseKeyOpen = true
+OpenKey = 'Z'

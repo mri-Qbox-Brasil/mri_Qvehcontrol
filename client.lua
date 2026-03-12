@@ -39,6 +39,10 @@ RegisterCommand("vehcontrol", function(source, args, rawCommand)
 	end
 end, false)
 
+if UseKeyOpen then
+    RegisterKeyMapping('vehcontrol', 'Abrir Painel Veicular', 'keyboard', OpenKey)
+end
+
 function openExternal()
 	if IsPedInAnyVehicle(PlayerPedId(), false) then
 		openVehControl()
@@ -59,9 +63,71 @@ end)
 function openVehControl()
 	isInVehControl = true
 	SetNuiFocus(true, true)
+	
+	-- Load Locales
+	local langData = {}
+	local langStr = LoadResourceFile(GetCurrentResourceName(), "locales/" .. (Locale or "en") .. ".json")
+	if langStr then
+		langData = json.decode(langStr)
+	end
+	
 	SendNUIMessage({
-		type = "openGeneral"
+		type = "openGeneral",
+		locales = langData
 	})
+	
+	Citizen.CreateThread(function()
+		while isInVehControl do
+			local playerPed = PlayerPedId()
+			local vehicle = GetVehiclePedIsIn(playerPed, false)
+			
+			if vehicle ~= 0 then
+				local coords = GetEntityCoords(playerPed)
+				local streetName, _ = GetStreetNameAtCoord(coords.x, coords.y, coords.z)
+				local street = GetStreetNameFromHashKey(streetName)
+				local zone = GetNameOfZone(coords.x, coords.y, coords.z)
+				local zoneLabel = GetLabelText(zone)
+				
+				local engineTemp = GetVehicleEngineTemperature(vehicle)
+                local fuelLevel = GetVehicleFuelLevel(vehicle)
+                local hasLegacy = GetResourceState('LegacyFuel') == 'started'
+                if hasLegacy then
+                    local success, result = pcall(function()
+                        return exports['LegacyFuel']:GetFuel(vehicle)
+                    end)
+                    if success and result then fuelLevel = result end
+                end
+				local engineRunning = GetIsVehicleEngineRunning(vehicle)
+				
+				local vehModel = GetEntityModel(vehicle)
+				local vehName = GetDisplayNameFromVehicleModel(vehModel)
+				local vehNameLabel = GetLabelText(vehName)
+				if vehNameLabel == "NULL" then vehNameLabel = vehName end
+
+                local hour = GetClockHours()
+                local minute = GetClockMinutes()
+               
+                if hour < 10 then hour = "0" .. tostring(hour) else hour = tostring(hour) end
+                if minute < 10 then minute = "0" .. tostring(minute) else minute = tostring(minute) end
+
+				SendNUIMessage({
+					type = "updateStats",
+					fuel = fuelLevel,
+					engineTemp = engineTemp,
+					street = street,
+					zone = zoneLabel,
+					vehName = vehNameLabel,
+                    engineRunning = engineRunning,
+                    hour = hour,
+                    minute = minute
+				})
+			else
+				closeVehControl()
+			end
+			
+			Citizen.Wait(500)
+		end
+	end)
 end
 
 function closeVehControl()
@@ -102,6 +168,26 @@ end)
 
 RegisterNUICallback('windows', function(data, cb)
 	WindowControl(data.window, data.door)
+end)
+
+RegisterNUICallback('windowall', function()
+    AllWindowControl()
+end)
+
+RegisterNUICallback('toggleLock', function()
+	ToggleLockControl()
+end)
+
+RegisterNUICallback('cycleSeat', function()
+	CycleSeatControl()
+end)
+
+RegisterNUICallback('toggleLights', function()
+	ToggleLightsControl()
+end)
+
+RegisterNUICallback('toggleHazard', function(data, cb)
+	ToggleHazardControl(data.state)
 end)
 
 -----------------------------------------------------------------------------
@@ -256,6 +342,77 @@ function AllWindowControl()
 			windowState2 = true
 			windowState3 = true
 			windowState4 = true
+		end
+	end
+end
+
+function ToggleLockControl()
+	local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
+	if vehicle ~= 0 then
+		local lockStatus = GetVehicleDoorLockStatus(vehicle)
+		if lockStatus == 1 or lockStatus == 0 then -- unlocked
+			SetVehicleDoorsLocked(vehicle, 2)
+			if QBCore then QBCore.Functions.Notify("Veículo Trancado", "error") end
+		else
+			SetVehicleDoorsLocked(vehicle, 1)
+			if QBCore then QBCore.Functions.Notify("Veículo Destrancado", "success") end
+		end
+	end
+end
+
+function CycleSeatControl()
+    local playerPed = PlayerPedId()
+    local vehicle = GetVehiclePedIsIn(playerPed, false)
+    if vehicle ~= 0 then
+        local currentSeat = -1
+        for i = -1, 4 do
+            if GetPedInVehicleSeat(vehicle, i) == playerPed then
+                currentSeat = i
+                break
+            end
+        end
+        
+        local nextSeat = currentSeat + 1
+        if nextSeat > 2 then nextSeat = -1 end
+        
+        if IsVehicleSeatFree(vehicle, nextSeat) then
+            SetPedIntoVehicle(playerPed, vehicle, nextSeat)
+        else
+            nextSeat = nextSeat + 1
+            if nextSeat > 2 then nextSeat = -1 end
+            if IsVehicleSeatFree(vehicle, nextSeat) then
+                SetPedIntoVehicle(playerPed, vehicle, nextSeat)
+            end
+        end
+    end
+end
+
+function ToggleLightsControl()
+	local playerPed = PlayerPedId()
+	local vehicle = GetVehiclePedIsIn(playerPed, false)
+	if vehicle ~= 0 then
+		local _, lightsOn, highbeamsOn = GetVehicleLightsState(vehicle)
+		if lightsOn == 1 then
+			SetVehicleLights(vehicle, 0)
+			SetVehicleLightsMode(vehicle, 0)
+			SetVehicleLights(vehicle, 1) -- turn off
+		else
+			SetVehicleLights(vehicle, 2)
+			SetVehicleLightsMode(vehicle, 2)
+		end
+	end
+end
+
+function ToggleHazardControl(state)
+	local playerPed = PlayerPedId()
+	local vehicle = GetVehiclePedIsIn(playerPed, false)
+	if vehicle ~= 0 then
+		if state then
+			SetVehicleIndicatorLights(vehicle, 0, true) -- Left
+			SetVehicleIndicatorLights(vehicle, 1, true) -- Right
+		else
+			SetVehicleIndicatorLights(vehicle, 0, false)
+			SetVehicleIndicatorLights(vehicle, 1, false)
 		end
 	end
 end

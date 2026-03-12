@@ -1,0 +1,11 @@
+{
+  "vehicle": "VEÍCULO",
+  "unknown": "DESCONHECIDO",
+  "engine": "MOTOR",
+  "emergency": "Emergência",
+  "lock": "Trancar",
+  "seat": "Assentos",
+  "interior_light": "INTERNA",
+  "light": "Luz",
+  "lights": "Faróis"
+}

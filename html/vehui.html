@@ -1,140 +1,478 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <link href="style.css" rel="stylesheet" type="text/css" />
-		<script src="nui://game/ui/jquery.js" type="text/javascript"></script>
-		<style>
-      .container {visibility: hidden;}
-		</style>
-	</head>
-  <body id="body">
-    <div class="container">
-      <div class="content">
-        <div class="slot"><img id="ignition" src="img/ignition.png" /></div>
-        <div class="slot"></div>
-        <div class="slot"><img id="frontHood" src="img/frontHood.png" /></div>
-        <div class="slot"><img id="rearHood" src="img/rearHood.png" /></div>
-        <div class="slot"><img id="rearHood2" src="img/rearHood2.png" /></div>
-        <div class="slot"><img id="interiorLight" src="img/interiorLight.png" /></div>
-        <div class="slot"><img id="windowFrontLeft" src="img/windowFrontLeft.png" /></div>
-        <div class="slot"><img id="doorFrontLeft" src="img/doorFrontLeft.png" /></div>
-        <div class="slot"><img id="seatFrontLeft" src="img/seatFrontLeft.png" /></div>
-        <div class="slot"><img id="seatFrontRight" src="img/seatFrontLeft.png" /></div>
-        <div class="slot"><img id="doorFrontRight" src="img/doorFrontRight.png" /></div>
-        <div class="slot"><img id="windowFrontRight" src="img/windowFrontRight.png" /></div>
-        <div class="slot"><img id="windowRearLeft" src="img/windowRearLeft.png" /></div>
-        <div class="slot"><img id="doorRearLeft" src="img/doorRearLeft.png" /></div>
-        <div class="slot"><img id="seatRearLeft" src="img/seatFrontLeft.png" /></div>
-        <div class="slot"><img id="seatRearRight" src="img/seatFrontLeft.png" /></div>
-        <div class="slot"><img id="doorRearRight" src="img/doorRearRight.png" /></div>
-        <div class="slot"><img id="windowRearRight" src="img/windowRearRight.png" /></div>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Car Dashboard UI</title>
+  
+  <link href="style.css" rel="stylesheet" type="text/css" />
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  
+  <!-- Tailwind CSS v3 CDN -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'dash-bg': '#111111',
+            'dash-card': '#1a1a1a',
+            'dash-accent': '#5bd029', // Custom Green
+            'dash-sidebar': '#0a0a0a',
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    .custom-tooltip { position: relative; }
+    .custom-tooltip::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 110%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(26, 26, 26, 0.95);
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 9px;
+      font-weight: 500;
+      white-space: nowrap;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.15s, transform 0.15s;
+      z-index: 1000;
+      border: 1px solid rgba(255,255,255,0.1);
+      pointer-events: none;
+      backdrop-filter: blur(4px);
+    }
+    .custom-tooltip:hover::after {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(-50%) translateY(-2px);
+    }
+  </style>
+</head>
+<body style="display: none;" class="overflow-hidden m-0 p-0 w-screen h-screen relative">
+
+<!-- BEGIN: Dashboard Container -->
+<main class="absolute bottom-4 left-4 w-full max-w-[500px] aspect-[1.3/1] bg-dash-bg rounded-[15px] border-2 border-zinc-800 flex overflow-hidden shadow-2xl">
+
+
+  <!-- BEGIN: Sidebar Navigation -->
+  <aside class="w-16 bg-dash-sidebar flex flex-col items-center py-6 border-r border-zinc-800 cursor-move" id="drag-handle" data-purpose="sidebar">
+    <div class="flex flex-col items-center gap-1 mb-8">
+      <span class="text-2xl font-bold" id="time-hour">08</span>
+      <span class="text-2xl font-bold opacity-80" id="time-minute">10</span>
+    </div>
+
+    <nav class="flex flex-col gap-4 text-zinc-500">
+      <!-- Camera Button (Reserved for future reverse cam) -->
+      <button class="hover:text-dash-accent transition-colors" id="btn-camera" title="Reverse Camera">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+        </svg>
+      </button>
+    </nav>
+
+    <div class="mt-auto">
+      <button class="text-zinc-500 hover:text-red-500 transition-colors" id="btn-close">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+        </svg>
+      </button>
+    </div>
+  </aside>
+  <!-- END: Sidebar Navigation -->
+
+  <!-- BEGIN: Main Dashboard Content -->
+  <section class="flex-1 p-3 flex flex-col relative" data-purpose="dashboard-main">
+    
+    <!-- Top Row: Info -->
+    <header class="flex justify-between items-start mb-4">
+      <div class="flex items-center gap-3">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+        </svg>
+        <div class="custom-tooltip" id="vehicle-name-container" data-tooltip="Unknown">
+          <p class="text-[8px] font-semibold text-zinc-400 uppercase tracking-widest leading-none" id="loc-vehicle">Vehicle</p>
+          <p class="text-sm font-bold uppercase" id="vehicle-name">Unknown</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- Center: Car Visualization & Fuel -->
+    <div class="flex-1 relative flex items-center justify-center">
+      
+      <!-- Car Image -->
+      <div class="absolute inset-0 flex justify-center items-center pointer-events-none z-0">
+        <img alt="Vehicle Top View" class="w-auto h-[280px] translate-y-[0px] object-contain drop-shadow-2xl rotate-[270deg] pointer-events-none" src="img/carro.png"/>
+        
+        <!-- Interactive Seat Selection Overlay (Hidden by default) -->
+        <div id="seat-overlay" class="absolute w-[260px] h-[140px] translate-y-[0px] pointer-events-auto z-10 hidden">
+          
+          <!-- Top Row (Left Side of Car) -->
+          <!-- Rear Left Seat (Left side, towards Trunk) -->
+          <button class="seat-btn absolute top-[28%] left-[28%] -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-dash-bg/80 border border-dash-accent hover:bg-dash-accent/20 flex items-center justify-center transition-all shadow-lg " data-seat="1">
+             <img src="img/seatFrontLeft.png" class="w-5 h-5 opacity-100" style="transform: scaleX(-1);" />
+          </button>
+          
+          <!-- Front Left Seat (Driver) -->
+          <button class="seat-btn absolute top-[28%] right-[28%] translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-dash-bg/80 border border-dash-accent hover:bg-dash-accent/20 flex items-center justify-center transition-all shadow-lg " data-seat="-1">
+             <img src="img/seatFrontLeft.png" class="w-5 h-5 opacity-100" style="transform: scaleX(-1);" />
+          </button>
+
+          <!-- Bottom Row (Right Side of Car) -->
+          <!-- Rear Right Seat (Right side, towards Trunk) -->
+          <button class="seat-btn absolute bottom-[28%] left-[28%] -translate-x-1/2 translate-y-1/2 w-8 h-8 rounded-full bg-dash-bg/80 border border-dash-accent hover:bg-dash-accent/20 flex items-center justify-center transition-all shadow-lg " data-seat="2">
+             <img src="img/seatFrontLeft.png" class="w-5 h-5 opacity-100" />
+          </button>
+          
+          <!-- Front Right Seat (Passenger) -->
+          <button class="seat-btn absolute bottom-[28%] right-[28%] translate-x-1/2 translate-y-1/2 w-8 h-8 rounded-full bg-dash-bg/80 border border-dash-accent hover:bg-dash-accent/20 flex items-center justify-center transition-all shadow-lg " data-seat="0">
+             <img src="img/seatFrontLeft.png" class="w-5 h-5 opacity-100" />
+          </button>
+
+        </div>
+
+        <!-- Interactive Door & Lock Overlay (Hidden by default) -->
+        <div id="door-overlay" class="absolute w-[260px] h-[140px] translate-y-[0px] pointer-events-auto z-10 hidden">
+          <!-- Hood (Front - facing Right) -->
+          <button class="door-btn absolute right-0 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-dash-bg/80 border border-blue-400 hover:bg-blue-400/20 flex items-center justify-center transition-all shadow-lg " data-door="4">
+            <img src="img/frontHood.png" class="w-5 h-5 opacity-80" />
+          </button>
+          
+          <!-- Trunk (Rear - facing Left) -->
+          <button class="door-btn absolute left-0 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-dash-bg/80 border border-blue-400 hover:bg-blue-400/20 flex items-center justify-center transition-all shadow-lg " data-door="5">
+            <img src="img/rearHood.png" class="w-5 h-5 opacity-80" />
+          </button>
+
+          <!-- Lock/Unlock Central Roof Button -->
+          <button id="roof-lock-btn" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-dash-accent/20 border border-dash-accent hover:bg-dash-accent/40 flex items-center justify-center transition-all shadow-lg z-20 ">
+            <svg class="w-5 h-5 text-dash-accent" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2V7a5 5 0 00-5-5zM7 7a3 3 0 016 0v2H7V7z"></path></svg>
+          </button>
+
+          <!-- Top Row (Left Side of Car) -->
+          <!-- Rear Left (Left side, towards Trunk) -->
+          <button class="door-btn absolute top-0 left-[25%] -translate-x-1/2 w-8 h-8 rounded-full bg-dash-bg/80 border border-orange-400 hover:bg-orange-400/20 flex items-center justify-center transition-all shadow-lg " data-door="2">
+             <img src="img/doorRearLeft.png" class="w-5 h-5 opacity-80" />
+          </button>
+          
+          <!-- Front Left (Left side, towards Hood) -->
+          <button class="door-btn absolute top-0 right-[25%] translate-x-1/2 w-8 h-8 rounded-full bg-dash-bg/80 border border-orange-400 hover:bg-orange-400/20 flex items-center justify-center transition-all shadow-lg " data-door="0">
+             <img src="img/doorFrontLeft.png" class="w-5 h-5 opacity-80" />
+          </button>
+
+          <!-- Bottom Row (Right Side of Car) -->
+          <!-- Rear Right (Right side, towards Trunk) -->
+          <button class="door-btn absolute bottom-0 left-[25%] -translate-x-1/2 w-8 h-8 rounded-full bg-dash-bg/80 border border-orange-400 hover:bg-orange-400/20 flex items-center justify-center transition-all shadow-lg " data-door="3">
+             <img src="img/doorRearRight.png" class="w-5 h-5 opacity-80" />
+          </button>
+          
+          <!-- Front Right (Right side, towards Hood) -->
+          <button class="door-btn absolute bottom-0 right-[25%] translate-x-1/2 w-8 h-8 rounded-full bg-dash-bg/80 border border-orange-400 hover:bg-orange-400/20 flex items-center justify-center transition-all shadow-lg " data-door="1">
+             <img src="img/doorFrontRight.png" class="w-5 h-5 opacity-80" />
+          </button>
+        </div>
+
+        <!-- Mock Status Indicators (Locks) - Absolute Positioned -->
+        <div class="absolute top-[10%] left-[10%] border-2 border-dash-accent rounded-full p-1 bg-black/50 door-indicator opacity-0 transition-opacity" data-door="0">
+          <svg class="w-4 h-4 text-dash-accent" fill="currentColor" viewbox="0 0 20 20"><path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2V7a5 5 0 00-5-5zM7 7a3 3 0 016 0v2H7V7z"></path></svg>
+        </div>
+      
+      </div>
+
+      <!-- Fuel Gauge -->
+      <div class="absolute right-4 flex flex-col items-center gap-2">
+        <div class="fuel-gauge-container">
+          <div class="fuel-level" id="fuel-level" style="height: 65%;"></div>
+        </div>
+        <svg class="w-4 h-4 text-dash-accent" fill="currentColor" viewbox="0 0 24 24">
+          <path d="M18.85 14.85l-1.41-1.41L15.59 15.3l-1.41-1.42 1.85-1.85a3.13 3.13 0 000-4.42L11 2.59a.9.9 0 00-1.27 0L4.85 7.46a3.13 3.13 0 000 4.42L6.71 13.7l-1.41 1.41 1.85 1.85a.9.9 0 001.27 0l2.58-2.58 1.42 1.41 1.85 1.85a.9.9 0 001.27 0zM10.3 5.41l3.59 3.59a1.13 1.13 0 010 1.59L10.3 14.18 6.71 10.59a1.13 1.13 0 010-1.59zM19 18h-4v2h4v-2z"></path>
+        </svg>
       </div>
     </div>
 
-    <script type="text/javascript">
-      $(function() {
-        /* open the UI for user */
-        window.addEventListener('message', function(event) {
-          if (event.data.type == "openGeneral"){
-            $('.container').css('visibility', 'visible')
-          } else if (event.data.type == "closeAll"){
-            $('.container').css('visibility', 'hidden')
-          }
-        });
-      });
-  
-      document.onkeyup = function(data){
-        if (data.which == 27){
-          $('.container').css('visibility', 'hidden')
-              $.post('http://mri_Qvehcontrol/NUIFocusOff', JSON.stringify({}));
-          }
-      }
+    <!-- Control Button Row -->
+    <nav class="grid grid-cols-5 gap-1.5 mb-3 z-10" data-purpose="control-buttons">
+      
+      <button class="glass-button rounded-lg h-10 flex items-center justify-center gap-1.5 hover:ring-1 ring-dash-accent/50 group transition-all text-zinc-400" id="btn-lock">
+        <svg class="w-3.5 h-3.5 text-dash-accent" fill="currentColor" viewbox="0 0 20 20"><path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2V7a5 5 0 00-5-5zM7 7a3 3 0 016 0v2H7V7z"></path></svg>
+        <span class="font-bold text-[9px]" id="lock-text">Lock</span>
+      </button>
+      
+      <button class="glass-button rounded-lg h-10 flex items-center justify-center gap-1.5 hover:ring-1 ring-dash-accent/50 transition-all text-zinc-400" id="btn-seat">
+        <svg class="w-3.5 h-3.5 text-dash-accent" fill="currentColor" viewbox="0 0 24 24"><path d="M7 11v2h10v-2H7zm5-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"></path></svg>
+        <span class="font-bold text-[9px]" id="loc-seat">Seat</span>
+      </button>
 
-      $('#ignition').click(function(){
-        $.post('http://mri_Qvehcontrol/ignition', JSON.stringify({}));
-      })
-      $('#frontHood').click(function(){
-        $.post('http://mri_Qvehcontrol/doors', JSON.stringify({
-          door: 4
+      <button class="glass-button rounded-lg h-10 flex items-center justify-center gap-1.5 hover:ring-1 ring-dash-accent/50 transition-all text-zinc-400" id="btn-engine">
+        <svg class="w-3.5 h-3.5 text-dash-accent" fill="currentColor" viewbox="0 0 24 24"><path d="M7 13h1v1h-1v-1zm10 0h1v1h-1v-1zm-6-2h2v2h-2v-2zm-4 4h1v1h-1v-1zm10 0h1v1h-1v-1zm-1-8v-1h-1v1h1zm-10 0v-1h1v1h-1zm5 0h2v1h-2v-1z"></path></svg>
+        <span class="font-bold text-[9px]" id="loc-engine">Engine</span>
+      </button>
+
+      <button class="glass-button rounded-xl h-12 flex flex-col items-center justify-center leading-tight hover:ring-1 ring-dash-accent/50 transition-all text-zinc-400" id="btn-intlight">
+        <svg class="w-4 h-4 text-dash-accent mb-0.5" fill="currentColor" viewbox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4.243 3.05a1 1 0 011.414 0l.707.707a1 1 0 11-1.414 1.414l-.707-.707a1 1 0 010-1.414zM17 10a1 1 0 011 1h1a1 1 0 110 2h-1a1 1 0 110-2h1V10zM10 18a1 1 0 011-1v-1a1 1 0 11-2 0v1a1 1 0 011 1zM5.05 14.243a1 1 0 010 1.414l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 0zm1.414-8.486a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM10 7a3 3 0 100 6 3 3 0 000-6z"></path></svg>
+        <span class="font-bold text-[8px] uppercase text-zinc-500">Interior</span>
+        <span class="font-bold text-[10px]">Light</span>
+      </button>
+
+      <button class="glass-button rounded-lg h-10 flex items-center justify-center gap-1.5 hover:ring-1 ring-dash-accent/50 transition-all text-zinc-400" id="btn-lights">
+        <svg class="w-3.5 h-3.5 text-dash-accent" fill="currentColor" viewbox="0 0 24 24"><path d="M13 13h7v-2h-7v2zm0 4h7v-2h-7v2zm0-8h7V7h-7v2zM2 12c0 3.31 2.69 6 6 6h2v-2H8c-2.21 0-4-1.79-4-4s1.79-4 4-4h2V6H8c-3.31 0-6 2.69-6 6z"></path></svg>
+        <span class="font-bold text-[9px]" id="loc-lights">Lights</span>
+      </button>
+    </nav>
+
+    <!-- Bottom Widgets Row -->
+    <footer class="grid grid-cols-3 gap-2 z-10" data-purpose="status-widgets">
+      
+      <!-- Navigation Widget -->
+      <div class="bg-dash-card rounded-xl p-2.5 flex items-center gap-2 border border-zinc-800/50 shadow-inner group cursor-help transition-all hover:ring-1 hover:ring-dash-accent/30" data-purpose="status-widgets-nav">
+        <div class="bg-dash-accent text-black p-2 rounded-lg group-hover:scale-110 transition-transform">
+          <svg class="w-4 h-4" fill="currentColor" viewbox="0 0 20 20"><path clip-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" fill-rule="evenodd"></path></svg>
+        </div>
+        <div class="min-w-0 flex flex-col justify-center">
+          <div class="custom-tooltip" id="street-name-container" data-tooltip="Unknown">
+            <p class="text-zinc-500 font-bold text-[8px] truncate" id="street-name">Unknown</p>
+          </div>
+          <div class="custom-tooltip" id="street-zone-container" data-tooltip="---">
+            <p class="text-lg font-black truncate leading-tight" id="street-zone">---</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Engine Widget -->
+      <div class="bg-dash-card rounded-xl p-2.5 flex items-center justify-center gap-2 border border-zinc-800/50 shadow-inner">
+        <div class="flex items-center gap-2">
+          <svg class="w-6 h-6 text-dash-accent" id="engine-icon" fill="currentColor" viewbox="0 0 24 24">
+            <path d="M15 13V5c0-1.66-1.34-3-3-3S9 3.34 9 5v8c-1.21.91-2 2.37-2 4 0 2.76 2.24 5 5 5s5-2.24 5-5c0-1.63-.79-3.09-2-4zm-4-2V5c0-.55.45-1 1-1s1 .45 1 1v6h-2z"></path>
+          </svg>
+          <div class="flex flex-col">
+            <span class="text-[8px] font-bold uppercase text-zinc-500 flex items-center">
+              <span class="mr-1">◀</span> <span id="loc-engine2">Engine</span>
+            </span>
+            <span class="text-lg font-black leading-none"><span id="engine-temp">0</span><span class="text-xs ml-0.5 font-medium text-zinc-500">°</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Emergency Widget -->
+      <div class="bg-dash-card rounded-xl p-2.5 flex items-center justify-between border border-zinc-800/50 shadow-inner">
+        <div class="flex items-center gap-1.5 overflow-hidden">
+          <div class="bg-red-600 p-1.5 rotate-45 rounded-md flex items-center justify-center transition-all duration-300 flex-shrink-0" id="hazard-icon-box">
+            <svg class="w-3 h-3 text-white -rotate-45" fill="none" stroke="currentColor" stroke-width="3" viewbox="0 0 24 24"><path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </div>
+          <span class="font-bold text-[8px] uppercase text-zinc-300 truncate" id="loc-emergency">Emergency</span>
+        </div>
+        <label class="switch scale-[0.6] transform origin-right flex-shrink-0">
+          <input type="checkbox" id="switch-hazard"/>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+    </footer>
+  </section>
+  <!-- END: Main Dashboard Content -->
+
+</main>
+<!-- END: Dashboard Container -->
+
+<script type="text/javascript">
+  $(function() {
+    /* listen for messages from client */
+    window.addEventListener('message', function(event) {
+      if (event.data.type == "openGeneral"){
+        $('body').fadeIn(200);
+        
+        // Handle Translations
+        if (event.data.locales) {
+          const loc = event.data.locales;
+          if (loc.vehicle) $('#loc-vehicle').text(loc.vehicle);
+          if (loc.unknown) $('#vehicle-name').text(loc.unknown); // Will be overwritten by updateStats
+          if (loc.engine) $('#loc-engine').text(loc.engine);
+          if (loc.engine) $('#loc-engine2').text(loc.engine);
+          if (loc.emergency) $('#loc-emergency').text(loc.emergency);
+          if (loc.lock) $('#lock-text').text(loc.lock);
+          if (loc.seat) $('#loc-seat').text(loc.seat);
+          if (loc.interior_light) $('#loc-intlight').text(loc.interior_light);
+          if (loc.light) $('#loc-light').text(loc.light);
+          if (loc.lights) $('#loc-lights').text(loc.lights);
+        }
+      } else if (event.data.type == "closeAll"){
+        $('body').fadeOut(200);
+      } else if (event.data.type == "updateStats"){
+        $('#fuel-level').css('height', event.data.fuel + '%');
+        $('#engine-temp').text(Math.round(event.data.engineTemp));
+        
+        $('#street-name').text(event.data.street);
+        $('#street-name-container').attr('data-tooltip', event.data.street);
+        
+        $('#street-zone').text(event.data.zone);
+        $('#street-zone-container').attr('data-tooltip', event.data.zone);
+        
+        $('#vehicle-name').text(event.data.vehName);
+        $('#vehicle-name-container').attr('data-tooltip', event.data.vehName);
+        $('#time-hour').text(event.data.hour);
+        $('#time-minute').text(event.data.minute);
+        
+        if (event.data.engineRunning) {
+          $('#engine-icon').removeClass('text-red-500').addClass('text-dash-accent');
+        } else {
+          $('#engine-icon').removeClass('text-dash-accent').addClass('text-red-500');
+        }
+      }
+    });
+
+    /* 
+    // Preview Mode for Web Browser (only shows if NOT in FiveM)
+    // Commented out to keep doors hidden by default
+    if (!window.invokeNative) {
+      setTimeout(function() {
+        // $('#door-overlay').fadeIn(300);
+        
+        // Mock a Portuguese locale injection for testing
+        window.dispatchEvent(new MessageEvent('message', {
+          data: {
+            type: "openGeneral",
+            locales: {
+              vehicle: "VEÍCULO", unknown: "DESCONHECIDO", engine: "MOTOR", emergency: "Emergência", lock: "Trancar", seat: "Assento", interior_light: "INTERNA", light: "Luz", lights: "Faróis"
+            }
+          }
         }));
-      })
-      $('#rearHood').click(function(){
-        $.post('http://mri_Qvehcontrol/doors', JSON.stringify({
-          door: 5
-        }));
-      })
-      $('#rearHood2').click(function(){
-        $.post('http://mri_Qvehcontrol/doors', JSON.stringify({
-          door: 6
-        }));
-      })
-      $('#interiorLight').click(function(){
-        $.post('http://mri_Qvehcontrol/interiorLight', JSON.stringify({}));
-      })
-      $('#windowFrontLeft').click(function(){
-        $.post('http://mri_Qvehcontrol/windows', JSON.stringify({
-          window: 0,
-          door: 0
-        }));
-      })
-      $('#doorFrontLeft').click(function(){
-        $.post('http://mri_Qvehcontrol/doors', JSON.stringify({
-          door: 0
-        }));
-      })
-      $('#seatFrontLeft').click(function(){
-        $.post('http://mri_Qvehcontrol/seatchange', JSON.stringify({
-          seat: -1
-        }));
-      })
-      $('#seatFrontRight').click(function(){
-        $.post('http://mri_Qvehcontrol/seatchange', JSON.stringify({
-          seat: 0,
-        }));
-      })
-      $('#doorFrontRight').click(function(){
-        $.post('http://mri_Qvehcontrol/doors', JSON.stringify({
-          door: 1
-        }));
-      })
-      $('#windowFrontRight').click(function(){
-        $.post('http://mri_Qvehcontrol/windows', JSON.stringify({
-          window: 1,
-          door: 1
-        }));
-      })
-      $('#windowRearLeft').click(function(){
-        $.post('http://mri_Qvehcontrol/windows', JSON.stringify({
-          window: 2,
-          door: 2
-        }));
-      })
-      $('#doorRearLeft').click(function(){
-        $.post('http://mri_Qvehcontrol/doors', JSON.stringify({
-          door: 2
-        }));
-      })
-      $('#seatRearLeft').click(function(){
-        $.post('http://mri_Qvehcontrol/seatchange', JSON.stringify({
-          seat: 1,
-        }));
-      })
-      $('#seatRearRight').click(function(){
-        $.post('http://mri_Qvehcontrol/seatchange', JSON.stringify({
-          seat: 2,
-        }));
-      })
-      $('#doorRearRight').click(function(){
-        $.post('http://mri_Qvehcontrol/doors', JSON.stringify({
-          door: 3
-        }));
-      })
-      $('#windowRearRight').click(function(){
-        $.post('http://mri_Qvehcontrol/windows', JSON.stringify({
-          window: 3,
-          door: 3
-        }));
-      })
-    </script>
-  </body>
+      }, 500);
+    }
+    */
+  });
+
+  const closeUI = () => {
+    $.post('http://mri_Qvehcontrol/NUIFocusOff', JSON.stringify({}));
+  }
+
+  document.onkeyup = function(data){
+    if (data.which == 27){ // ESC
+      closeUI();
+    }
+  }
+
+  $('#btn-close').click(closeUI);
+
+  // New Buttons
+  $('#btn-lock').click(function(){
+    // Hide seat overlay if open to prevent overlap
+    $('#seat-overlay').fadeOut(100);
+    // Toggle the door/lock overlay
+    $('#door-overlay').fadeToggle(150);
+  });
+
+  $('#btn-seat').click(function(){
+    // Hide door overlay if open to prevent overlap
+    $('#door-overlay').fadeOut(100);
+    // Toggle the new seat selection overlay
+    $('#seat-overlay').fadeToggle(150);
+  });
+
+  // Individual seat selection clicks
+  $('.seat-btn').click(function(){
+    let seatId = $(this).data('seat');
+    
+    // Send NUI callback
+    $.post('http://mri_Qvehcontrol/seatchange', JSON.stringify({
+      seat: parseInt(seatId)
+    }));
+
+    // Hide the overlay after selecting
+    $('#seat-overlay').fadeOut(150);
+  });
+
+  // Individual door/hood/trunk selection clicks
+  $('.door-btn').click(function(){
+    let doorId = $(this).data('door');
+    
+    // Send NUI callback
+    $.post('http://mri_Qvehcontrol/doors', JSON.stringify({
+      door: parseInt(doorId)
+    }));
+  });
+
+  // Central Roof Lock Click
+  $('#roof-lock-btn').click(function(){
+    $.post('http://mri_Qvehcontrol/toggleLock', JSON.stringify({}));
+  });
+
+  $('#btn-engine').click(function(){
+    $.post('http://mri_Qvehcontrol/ignition', JSON.stringify({}));
+  });
+
+  $('#btn-intlight').click(function(){
+    $.post('http://mri_Qvehcontrol/interiorLight', JSON.stringify({}));
+  });
+
+  $('#btn-lights').click(function(){
+    $.post('http://mri_Qvehcontrol/toggleLights', JSON.stringify({}));
+  });
+
+  // Switch Hazard
+  $('#switch-hazard').change(function() {
+    let isChecked = $(this).is(':checked');
+    if (isChecked) {
+      $('#hazard-icon-box').addClass('animate-pulse');
+    } else {
+      $('#hazard-icon-box').removeClass('animate-pulse');
+    }
+    $.post('http://mri_Qvehcontrol/toggleHazard', JSON.stringify({state: isChecked}));
+  });
+
+  // Functionality for sidebar icons removed as they are now in the door overlay.
+
+    // --- Draggable UI ---
+    const dashboard = document.querySelector('main');
+    const dragHandle = document.getElementById('drag-handle');
+    let isDragging = false;
+    let offset = { x: 0, y: 0 };
+
+    // Load saved position
+    const savedPos = JSON.parse(localStorage.getItem('dash_position'));
+    if (savedPos) {
+      dashboard.style.left = savedPos.x + 'px';
+      dashboard.style.top = savedPos.y + 'px';
+      dashboard.classList.remove('bottom-4', 'left-4'); // Remove default alignment
+      dashboard.style.bottom = 'auto';
+    }
+
+    dragHandle.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      const rect = dashboard.getBoundingClientRect();
+      offset.x = e.clientX - rect.left;
+      offset.y = e.clientY - rect.top;
+      dashboard.classList.add('opacity-80', 'ring-2', 'ring-dash-accent/20');
+      dashboard.classList.remove('bottom-4', 'left-4');
+      dashboard.style.bottom = 'auto';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      let newX = e.clientX - offset.x;
+      let newY = e.clientY - offset.y;
+
+      // Keep within screen bounds
+      newX = Math.max(0, Math.min(window.innerWidth - dashboard.offsetWidth, newX));
+      newY = Math.max(0, Math.min(window.innerHeight - dashboard.offsetHeight, newY));
+
+      dashboard.style.left = newX + 'px';
+      dashboard.style.top = newY + 'px';
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (!isDragging) return;
+      isDragging = false;
+      dashboard.classList.remove('opacity-80', 'ring-2', 'ring-dash-accent/20');
+      
+      // Save position
+      const rect = dashboard.getBoundingClientRect();
+      localStorage.setItem('dash_position', JSON.stringify({ x: rect.left, y: rect.top }));
+    });
+  </script>
+</body>
 </html>

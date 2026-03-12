@@ -23,7 +23,9 @@ files {
   "html/img/windowFrontRight.png",
   "html/img/windowRearLeft.png",
   "html/img/windowRearRight.png",
-  "html/img/interiorLight.png"
+  "html/img/interiorLight.png",
+  "locales/en.json",
+  "locales/pt.json"
 }
 
 client_script {
