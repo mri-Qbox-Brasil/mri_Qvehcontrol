@@ -1,5 +1,5 @@
 -- Commands [true/false]
-UseCommands = true
+UseCommands = false
 
 -- Disable ped moving seat from pass to driver unintentionally [true/false]
 DisableSeatShuffle = true
@@ -11,5 +11,5 @@ LeaveRunning = true
 Locale = 'pt'
 
 -- Key Mapping Configuration
-UseKeyOpen = true
+UseKeyOpen = false
 OpenKey = 'Z'
