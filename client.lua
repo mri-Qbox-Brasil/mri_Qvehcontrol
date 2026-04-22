@@ -195,7 +195,7 @@ end)
 -----------------------------------------------------------------------------
 
 function EngineControl()
-    ExecuteCommand('mri:engine')
+    ExecuteCommand('mri:engine_v2')
 end
 
 
