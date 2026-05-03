@@ -9,38 +9,45 @@ local QBCore = exports['qb-core']:GetCoreObject()
 
 Citizen.CreateThread(function()
     while true do
-		Citizen.Wait(0)
-		if LeaveRunning then
-			local playerPed = PlayerPedId()
-			local vehicle = GetVehiclePedIsIn(playerPed, false)
-			if IsPedInAnyVehicle(playerPed, false) and IsControlPressed(2, 75) and not IsEntityDead(playerPed) then
-                Citizen.Wait(150)
-				if IsPedInAnyVehicle(playerPed, false) and IsControlPressed(2, 75) and not IsEntityDead(playerPed) then
-					SetVehicleEngineOn(vehicle, true, true, false)
-					TaskLeaveVehicle(playerPed, vehicle, 0)
-					
-					if autopilotActive then
-						autopilotActive = false
-						ClearPedTasks(playerPed)
-						QBCore.Functions.Notify("Piloto automático desativado", "error")
-						SendNUIMessage({ type = "updateAutopilot", active = false })
-					end
-				end
-			end
-		end
-		if IsPedInAnyVehicle(PlayerPedId(), false) and DisableSeatShuffle then
-			if GetPedInVehicleSeat(GetVehiclePedIsIn(PlayerPedId(), false), 0) == PlayerPedId() then
-				if GetIsTaskActive(PlayerPedId(), 165) then
-					SetPedIntoVehicle(PlayerPedId(), GetVehiclePedIsIn(PlayerPedId(), false), 0)
-				end
-			end
-		end
-		
-		if autopilotActive and not IsPedInAnyVehicle(PlayerPedId(), false) then
-			autopilotActive = false
-			ClearPedTasks(PlayerPedId())
-			SendNUIMessage({ type = "updateAutopilot", active = false })
-		end
+        local sleep = 1000
+        local playerPed = PlayerPedId()
+        local vehicle = GetVehiclePedIsIn(playerPed, false)
+
+        if vehicle ~= 0 then
+            sleep = 0
+            if LeaveRunning then
+                if IsControlPressed(2, 75) and not IsEntityDead(playerPed) then
+                    Citizen.Wait(150)
+                    if IsPedInAnyVehicle(playerPed, false) and IsControlPressed(2, 75) and not IsEntityDead(playerPed) then
+                        SetVehicleEngineOn(vehicle, true, true, false)
+                        TaskLeaveVehicle(playerPed, vehicle, 0)
+                        
+                        if autopilotActive then
+                            autopilotActive = false
+                            ClearPedTasks(playerPed)
+                            QBCore.Functions.Notify("Piloto automático desativado", "error")
+                            SendNUIMessage({ type = "updateAutopilot", active = false })
+                        end
+                    end
+                end
+            end
+
+            if DisableSeatShuffle then
+                if GetPedInVehicleSeat(vehicle, 0) == playerPed then
+                    if GetIsTaskActive(playerPed, 165) then
+                        SetPedIntoVehicle(playerPed, vehicle, 0)
+                    end
+                end
+            end
+        end
+        
+        if autopilotActive and vehicle == 0 then
+            autopilotActive = false
+            ClearPedTasks(playerPed)
+            SendNUIMessage({ type = "updateAutopilot", active = false })
+        end
+
+        Citizen.Wait(sleep)
     end
 end)
 
