@@ -213,12 +213,7 @@ end)
 function EngineControl()
     local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
     if vehicle ~= 0 and GetPedInVehicleSeat(vehicle, -1) == PlayerPedId() then
-		QBCore.Functions.Progressbar("engine", (GetIsVehicleEngineRunning(vehicle) and "Desligando" or "Ligando") .. " Motor", 1500, false, true, {
-			disableMovement = false, disableCarMovement = false, disableMouse = false, disableCombat = true,
-		}, {}, {}, {}, function()
-			LocalPlayer.state:set("inv_busy", false, true)
-			SetVehicleEngineOn(vehicle, (not GetIsVehicleEngineRunning(vehicle)), false, true)
-		end)
+        ExecuteCommand('mri:engine')
     end
 end
 
