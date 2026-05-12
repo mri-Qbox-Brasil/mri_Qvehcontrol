@@ -11,7 +11,7 @@
 
 @layer components {
   .glass-button {
-    @apply bg-dash-bg/60 border border-zinc-800/80 backdrop-blur-md;
+    @apply bg-dash-bg/60 border border-zinc-800/80;
   }
   
   .fuel-gauge-container {
@@ -31,7 +31,7 @@
   }
   .custom-tooltip::after {
     content: attr(data-tooltip);
-    @apply absolute bottom-[110%] left-1/2 -translate-x-1/2 bg-[#1a1a1a]/95 text-white px-2 py-1 rounded-md text-[9px] font-medium whitespace-nowrap opacity-0 invisible transition-all duration-150 z-[1000] border border-white/10 backdrop-blur-[4px] pointer-events-none;
+    @apply absolute bottom-[110%] left-1/2 -translate-x-1/2 bg-[#1a1a1a]/95 text-white px-2 py-1 rounded-md text-[9px] font-medium whitespace-nowrap opacity-0 invisible transition-all duration-150 z-[1000] border border-white/10 pointer-events-none;
   }
   .custom-tooltip:hover::after {
     @apply opacity-100 visible -translate-y-0.5;

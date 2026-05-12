@@ -39,7 +39,7 @@ export const DevTools = () => {
   };
 
   return (
-    <div className="fixed bottom-4 left-4 z-[9999] bg-black/80 border border-white/20 p-4 rounded-xl backdrop-blur-md pointer-events-auto flex flex-col gap-2">
+    <div className="fixed bottom-4 left-4 z-[9999] bg-black/80 border border-white/20 p-4 rounded-xl pointer-events-auto flex flex-col gap-2">
       <h4 className="text-white text-xs font-bold uppercase tracking-widest border-b border-white/10 pb-2 mb-1">UI DevTools</h4>
       
       <button 
