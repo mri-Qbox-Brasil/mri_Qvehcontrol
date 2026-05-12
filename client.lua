@@ -166,6 +166,11 @@ function openVehControl()
 			if exports['cdn-fuel'] then
 				local f = exports['cdn-fuel']:GetFuel(veh)
 				if type(f) == "number" then fuel = f end
+			else
+				if exports['mri_Qfuel'] then
+					local f = exports['mri_Qfuel']:GetFuel(veh)
+					if type(f) == "number" then fuel = f end
+				end
 			end
 			
 			local engineTemp = GetVehicleEngineTemperature(veh)
