@@ -12,6 +12,11 @@ files {
   "ui/dist/**/*"
 }
 
+shared_scripts {
+  '@ox_lib/init.lua',
+  '@qbx_core/modules/lib.lua',
+}
+
 client_script {
   'config.lua',
   '3d_viewer.lua',

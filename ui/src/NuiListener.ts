@@ -19,14 +19,32 @@ export const NuiListener = () => {
       } else if (type === 'closeAll') {
         setVisible(false);
       } else if (type === 'initSettings') {
-        const setPos = useCarStore.getState().setPosition;
-        setPos(data.positionType || 'center', data.customX || 0, data.customY || 0);
+        const store = useCarStore.getState();
+        store.setPosition(data.positionType || 'center', data.customX || 0, data.customY || 0);
         updateStats({ 
           isAdmin: data.isAdmin === true,
           enable3DViewer: data.enable3DViewer === true,
           hasHood: data.hasHood !== false,
-          hasTrunk: data.hasTrunk !== false
+          hasTrunk: data.hasTrunk !== false,
+          enableExtras: data.enableExtras === true,
+          enableLiveries: data.enableLiveries === true,
         });
+        // Initialize dynamic doors
+        if (data.doors) {
+          store.initDoors(data.doors);
+        }
+        // Initialize extras
+        if (data.extras && data.extras.length > 0) {
+          store.initExtras(data.extras);
+        } else {
+          store.initExtras([]);
+        }
+        // Initialize liveries
+        if (data.liveries && data.liveries.length > 0) {
+          store.initLiveries(data.liveries);
+        } else {
+          store.initLiveries([]);
+        }
       } else if (type === 'updateStats') {
         updateStats({
           fuel: data.fuel,
@@ -44,6 +62,10 @@ export const NuiListener = () => {
       } else if (type === 'updateDynamicVehicle') {
         if (data.seats) {
           updateSeats(data.seats);
+        }
+      } else if (type === 'updateDoors') {
+        if (data.doors) {
+          useCarStore.getState().updateDoorStates(data.doors);
         }
       }
     };
@@ -67,11 +89,11 @@ export const NuiListener = () => {
     return () => window.removeEventListener('keyup', keyHandler);
   }, [setVisible]);
 
-  return null; // This component doesn't render anything
+  return null;
 };
 
 // Helper for sending NUI messages to Lua
-export const fetchNui = async (eventName: string, data?: any) => {
+export const fetchNui = async <T = any>(eventName: string, data?: any): Promise<T | null> => {
   const resourceName = (window as any).GetParentResourceName ? (window as any).GetParentResourceName() : 'mri_Qvehcontrol';
   try {
     const options = {
@@ -84,6 +106,6 @@ export const fetchNui = async (eventName: string, data?: any) => {
     const resp = await fetch(`https://${resourceName}/${eventName}`, options);
     return await resp.json();
   } catch (error) {
-    return false;
+    return null;
   }
 };

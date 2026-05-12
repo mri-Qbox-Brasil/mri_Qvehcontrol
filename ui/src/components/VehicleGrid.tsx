@@ -1,11 +1,55 @@
 import { useCarStore } from '../store/useCarStore';
 import { fetchNui } from '../NuiListener';
 
+// Door icon paths — index 0-3 use door icons, 4 = hood, 5 = trunk
+const DOOR_ICONS: Record<number, string> = {
+  0: 'img/doorFrontLeft.png',
+  1: 'img/doorFrontRight.png',
+  2: 'img/doorRearLeft.png',
+  3: 'img/doorRearRight.png',
+  4: 'img/frontHood.png',
+  5: 'img/rearHood.png',
+};
+
+// Door positioning around the vehicle SVG (oriented 270deg = front is right)
+// Positions mapped: right = front, left = rear, top = passenger-side, bottom = driver-side
+const DOOR_POSITIONS: Record<number, string> = {
+  0: 'top-[18%] right-[32%]',        // Driver door (front-left in game = top in UI)
+  1: 'bottom-[18%] right-[32%]',     // Passenger door (front-right = bottom in UI)
+  2: 'top-[18%] left-[32%]',         // Rear left (top)
+  3: 'bottom-[18%] left-[32%]',      // Rear right (bottom)
+  4: 'top-1/2 right-[2%] -translate-y-1/2',   // Hood (front)
+  5: 'top-1/2 left-[2%] -translate-y-1/2',    // Trunk (rear)
+};
+
+const DoorButton = ({ door, onToggle }: { door: { index: number; label: string; open: boolean }; onToggle: (i: number) => void }) => {
+  const posClass = DOOR_POSITIONS[door.index] || '';
+  const iconSrc = DOOR_ICONS[door.index];
+
+  return (
+    <button
+      onClick={() => onToggle(door.index)}
+      title={door.label}
+      className={`absolute ${posClass} z-20 flex items-center justify-center transition-all shadow-lg hover:scale-110 w-8 h-8 rounded-full border ${
+        door.open
+          ? 'bg-red-500/80 border-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]'
+          : 'bg-dash-bg/80 border-dash-accent hover:bg-dash-accent/30'
+      }`}
+    >
+      {iconSrc ? (
+        <img src={iconSrc} className={`w-5 h-5 transition-transform ${door.open ? 'scale-110' : ''}`} />
+      ) : (
+        <span className={`text-[8px] font-bold uppercase leading-none ${door.open ? 'text-white' : 'text-dash-accent'}`}>
+          {door.label.substring(0, 3)}
+        </span>
+      )}
+    </button>
+  );
+};
+
 export const VehicleGrid = () => {
   const seats = useCarStore(state => state.seats);
-  const toggleDoor = useCarStore(state => state.toggleDoor);
-  const hasHood = useCarStore(state => state.hasHood);
-  const hasTrunk = useCarStore(state => state.hasTrunk);
+  const doors = useCarStore(state => state.doors);
   const vehicleClass = useCarStore(state => state.vehicleClass);
 
   const handleSeatClick = (seatIndex: number) => {
@@ -14,18 +58,13 @@ export const VehicleGrid = () => {
 
   const handleDoorClick = (doorIndex: number) => {
     fetchNui('doors', { door: doorIndex });
-    toggleDoor(doorIndex);
-  };
-
-  const handleRoofLock = () => {
-    fetchNui('toggleLock');
   };
 
   const isBus = seats.length > 6 || [10, 11, 12, 17, 20].includes(vehicleClass);
   
   return (
     <div className="relative w-full h-full flex justify-center items-center z-0">
-      {/* Background Vehicle Image or Placeholder */}
+      {/* Background Vehicle Image */}
       {isBus ? (
         <img 
           alt="Bus Top View" 
@@ -42,21 +81,13 @@ export const VehicleGrid = () => {
       
       <div className={`absolute pointer-events-auto z-10 flex items-center justify-center gap-2 ${isBus ? 'w-[400px] h-[80px]' : 'w-[260px] h-[140px] flex-col'}`}>
         
-        {/* Hood / Trunk buttons for all cars */}
-          <>
-            {hasHood && (
-              <button onClick={() => handleDoorClick(4)} className="door-btn absolute right-0 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-dash-bg/80 border border-blue-400 hover:bg-blue-400/40 flex items-center justify-center transition-all shadow-lg hover:scale-110 z-50">
-                <img src="img/frontHood.png" className="w-5 h-5 opacity-80" />
-              </button>
-            )}
-            {hasTrunk && (
-              <button onClick={() => handleDoorClick(5)} className="door-btn absolute left-0 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-dash-bg/80 border border-blue-400 hover:bg-blue-400/40 flex items-center justify-center transition-all shadow-lg hover:scale-110 z-50">
-                <img src="img/rearHood.png" className="w-5 h-5 opacity-80" />
-              </button>
-            )}
-          </>
+        {/* Dynamic Door Buttons */}
+        {doors.map(door => (
+          <DoorButton key={door.index} door={door} onToggle={handleDoorClick} />
+        ))}
+
         {/* Central Lock */}
-        <button onClick={handleRoofLock} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-dash-accent/20 border border-dash-accent hover:bg-dash-accent/50 flex items-center justify-center transition-all shadow-lg z-50 hover:scale-110">
+        <button onClick={() => fetchNui('toggleLock')} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-dash-accent/20 border border-dash-accent hover:bg-dash-accent/50 flex items-center justify-center transition-all shadow-lg z-50 hover:scale-110">
           <svg className="w-5 h-5 text-dash-accent" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2V7a5 5 0 00-5-5zM7 7a3 3 0 016 0v2H7V7z"></path></svg>
         </button>
 

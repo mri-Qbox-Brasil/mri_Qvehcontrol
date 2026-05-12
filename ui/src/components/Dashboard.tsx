@@ -3,6 +3,8 @@ import type { MouseEvent as ReactMouseEvent } from 'react';
 import { useCarStore } from '../store/useCarStore';
 import { fetchNui } from '../NuiListener';
 import { VehicleGrid } from './VehicleGrid';
+import { ExtrasPanel } from './ExtrasPanel';
+import { Toast } from './Toast';
 
 export const Dashboard = () => {
   const visible = useCarStore(state => state.visible);
@@ -11,6 +13,13 @@ export const Dashboard = () => {
   const customY = useCarStore(state => state.customY);
   const setPosition = useCarStore(state => state.setPosition);
   const isAdmin = useCarStore(state => state.isAdmin);
+  const activeTab = useCarStore(state => state.activeTab);
+  const setActiveTab = useCarStore(state => state.setActiveTab);
+  const enableExtras = useCarStore(state => state.enableExtras);
+  const enableLiveries = useCarStore(state => state.enableLiveries);
+  const extras = useCarStore(state => state.extras);
+  const liveries = useCarStore(state => state.liveries);
+  const showCustomizeTab = (enableExtras && extras.length > 0) || (enableLiveries && liveries.length > 0);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -78,9 +87,17 @@ export const Dashboard = () => {
   };
 
   const selectPreset = (preset: string) => {
-    setPosition(preset, 0, 0);
-    fetchNui('savePosition', { type: preset, x: 0, y: 0 });
-    if (preset !== 'custom') setMenuOpen(false);
+    if (preset === 'custom') {
+      if (scalerRef.current) {
+        const rect = scalerRef.current.getBoundingClientRect();
+        setPosition('custom', rect.left, rect.top);
+        fetchNui('savePosition', { type: 'custom', x: rect.left, y: rect.top });
+      }
+    } else {
+      setPosition(preset, 0, 0);
+      fetchNui('savePosition', { type: preset, x: 0, y: 0 });
+      setMenuOpen(false);
+    }
   };
 
   const saveGlobal = () => {
@@ -121,10 +138,32 @@ export const Dashboard = () => {
         
         <aside className="w-16 bg-dash-sidebar flex flex-col items-center py-6 border-r border-zinc-800 pointer-events-auto z-50 rounded-l-[13px]">
           <DashboardTime />
-          <nav className="flex flex-col gap-4 text-zinc-500 relative">
+          <nav className="flex flex-col gap-4 text-zinc-500 relative mt-4">
+            <button
+              onClick={() => setActiveTab('main')}
+              className={`p-2 rounded-xl transition-colors hover:bg-white/10 ${activeTab === 'main' ? 'bg-dash-accent/20 text-dash-accent' : ''}`}
+              title="Tela Inicial"
+            >
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-car-icon lucide-car"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
+            </button>
+            {showCustomizeTab && (
+              <button
+                onClick={() => setActiveTab('customize')}
+                className={`p-2 rounded-xl transition-colors hover:bg-white/10 ${activeTab === 'customize' ? 'bg-dash-accent/20 text-dash-accent' : ''}`}
+                title="Extras & Plotagens"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
+                </svg>
+              </button>
+            )}
+          </nav>
+          
+          <div className="mt-auto relative">
             <button 
               onClick={() => setMenuOpen(!menuOpen)}
-              className={`p-2 rounded-xl transition-colors hover:bg-white/10 ${menuOpen ? 'bg-white/10 text-white' : ''}`}
+              className={`p-2 rounded-xl transition-colors hover:bg-white/10 text-zinc-500 ${menuOpen ? 'bg-white/10 text-white' : ''}`}
+              title="Configurações"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
@@ -132,7 +171,7 @@ export const Dashboard = () => {
               </svg>
             </button>
             {menuOpen && (
-              <div className="absolute left-[110%] top-0 bg-[#1a1a1a] border border-zinc-700/50 rounded-xl p-3 shadow-2xl w-48 z-[100]">
+              <div className="absolute left-[110%] bottom-0 bg-[#1a1a1a] border border-zinc-700/50 rounded-xl p-3 shadow-2xl w-48 z-[100]">
                 <h3 className="text-white text-xs font-bold uppercase mb-2 tracking-widest border-b border-zinc-800 pb-1">Position</h3>
                 <div className="flex flex-col gap-1">
                   {['center', 'center-right', 'center-left', 'bottom-right', 'top-right', 'bottom-left', 'top-left'].map(p => (
@@ -153,21 +192,19 @@ export const Dashboard = () => {
                 )}
               </div>
             )}
-          </nav>
-          <div className="mt-auto">
-            <button className="text-zinc-500 hover:text-red-500 transition-colors" onClick={() => fetchNui('NUIFocusOff')}>
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-              </svg>
-            </button>
           </div>
         </aside>
 
         <section className="flex-1 p-4 pb-6 flex flex-col relative pointer-events-auto">
+          <Toast />
           <header className={`flex justify-between items-start mb-4 ${positionType === 'custom' ? 'cursor-grab active:cursor-grabbing' : ''}`} onMouseDown={startDrag}>
             <DashboardHeader />
           </header>
-          <DashboardContent viewMode={viewMode} setViewMode={setViewMode} />
+          {activeTab === 'main' ? (
+            <DashboardContent viewMode={viewMode} setViewMode={setViewMode} />
+          ) : (
+            <ExtrasPanel />
+          )}
         </section>
         
         </div>

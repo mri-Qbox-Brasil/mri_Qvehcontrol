@@ -85,6 +85,54 @@ function openVehControl()
 	isInVehControl = true
 	SetNuiFocus(true, true)
 	
+	-- Collect valid doors for this vehicle
+	local doorsData = {}
+	local doorLabels = {
+		[0] = "Motorista",
+		[1] = "Passageiro",
+		[2] = "Tras. Esq.",
+		[3] = "Tras. Dir.",
+		[4] = "Capô",
+		[5] = "Porta-malas"
+	}
+	for i = 0, 5 do
+		if GetIsDoorValid(vehicle, i) then
+			doorsData[#doorsData + 1] = {
+				index = i,
+				label = doorLabels[i],
+				open = GetVehicleDoorAngleRatio(vehicle, i) > 0.0
+			}
+		end
+	end
+	
+	-- Collect extras data
+	local extrasData = {}
+	if Config.EnableExtras then
+		for i = 1, 20 do
+			if DoesExtraExist(vehicle, i) then
+				extrasData[#extrasData + 1] = {
+					id = i,
+					enabled = IsVehicleExtraTurnedOn(vehicle, i)
+				}
+			end
+		end
+	end
+	
+	-- Collect liveries data
+	local liveriesData = {}
+	if Config.EnableLiveries then
+		local liveryCount = GetVehicleLiveryCount(vehicle)
+		local currentLivery = GetVehicleLivery(vehicle)
+		if liveryCount > 0 then
+			for i = 0, liveryCount - 1 do
+				liveriesData[#liveriesData + 1] = {
+					id = i,
+					active = currentLivery == i
+				}
+			end
+		end
+	end
+	
 	SendNUIMessage({ type = "openGeneral" })
 	SendNUIMessage({ type = "updateAutopilot", active = autopilotActive })
 	SendNUIMessage({
@@ -95,7 +143,12 @@ function openVehControl()
 		isAdmin = isPlayerAdmin,
 		enable3DViewer = Config.Enable3DViewer,
 		hasHood = GetIsDoorValid(vehicle, 4),
-		hasTrunk = GetIsDoorValid(vehicle, 5)
+		hasTrunk = GetIsDoorValid(vehicle, 5),
+		doors = doorsData,
+		extras = extrasData,
+		liveries = liveriesData,
+		enableExtras = Config.EnableExtras,
+		enableLiveries = Config.EnableLiveries
 	})
 	
 	local maxSeats = GetVehicleModelNumberOfSeats(GetEntityModel(vehicle))
@@ -140,6 +193,18 @@ function openVehControl()
 				seats = seatsData
 			})
 			
+			-- Update door states
+			local doorsState = {}
+			for i = 0, 5 do
+				if GetIsDoorValid(veh, i) then
+					doorsState[#doorsState + 1] = {
+						index = i,
+						open = GetVehicleDoorAngleRatio(veh, i) > 0.0
+					}
+				end
+			end
+			SendNUIMessage({ type = "updateDoors", doors = doorsState })
+			
 			SendNUIMessage({
 				type = "updateStats",
 				fuel = fuel,
@@ -171,42 +236,92 @@ end)
 -----------------------------------------------------------------------------
 -- NUI CALLBACKS & ACTIONS
 -----------------------------------------------------------------------------
-RegisterNUICallback('ignition', function() EngineControl() end)
-RegisterNUICallback('interiorLight', function() InteriorLightControl() end)
-RegisterNUICallback('doors', function(data) DoorControl(data.door) end)
-RegisterNUICallback('seatchange', function(data) SeatControl(data.seat) end)
-RegisterNUICallback('windows', function(data) WindowControl(data.window, data.door) end)
-RegisterNUICallback('autopilot', function() AutopilotControl() end)
-RegisterNUICallback('toggleHazard', function(data)
+RegisterNUICallback('ignition', function(data, cb) EngineControl() if cb then cb('ok') end end)
+RegisterNUICallback('interiorLight', function(data, cb) InteriorLightControl() if cb then cb('ok') end end)
+RegisterNUICallback('doors', function(data, cb) DoorControl(data.door) if cb then cb('ok') end end)
+RegisterNUICallback('seatchange', function(data, cb) SeatControl(data.seat) if cb then cb('ok') end end)
+RegisterNUICallback('windows', function(data, cb) WindowControl(data.window, data.door) if cb then cb('ok') end end)
+RegisterNUICallback('autopilot', function(data, cb) AutopilotControl() if cb then cb('ok') end end)
+RegisterNUICallback('toggleHazard', function(data, cb)
 	local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
 	if vehicle ~= 0 then
 		SetVehicleIndicatorLights(vehicle, 0, data.state)
 		SetVehicleIndicatorLights(vehicle, 1, data.state)
 	end
+	if cb then cb('ok') end
 end)
-RegisterNUICallback('toggleLights', function()
+RegisterNUICallback('toggleLights', function(data, cb)
 	local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
 	if vehicle ~= 0 then
 		local _, lightsOn, highbeamsOn = GetVehicleLightsState(vehicle)
-		if lightsOn == 1 then
-			SetVehicleLights(vehicle, 0)
+		if lightsOn == 1 or highbeamsOn == 1 then
+			SetVehicleLights(vehicle, 1) -- Force off
 		else
-			SetVehicleLights(vehicle, 2)
+			SetVehicleLights(vehicle, 2) -- Force on
 		end
 	end
+	if cb then cb('ok') end
 end)
-RegisterNUICallback('toggleLock', function()
+RegisterNUICallback('toggleExtra', function(data, cb)
+	local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
+	if vehicle ~= 0 and GetPedInVehicleSeat(vehicle, -1) == PlayerPedId() then
+		local extraId = math.floor(tonumber(data.id))
+
+		-- Block extra toggle if vehicle is damaged to prevent the auto-repair exploit
+		local bodyHealth = GetVehicleBodyHealth(vehicle)
+		if bodyHealth < 1000.0 then
+			SendNUIMessage({ type = "showToast", text = "Conserte o veículo antes de alterar extras", toastType = "error" })
+			if cb then cb({ success = false }) end
+			return
+		end
+
+		if DoesExtraExist(vehicle, extraId) then
+			if IsVehicleExtraTurnedOn(vehicle, extraId) then
+				qbx.setVehicleExtra(vehicle, extraId, false)
+				SendNUIMessage({ type = "showToast", text = "Extra " .. extraId .. " desativado", toastType = "error" })
+			else
+				qbx.setVehicleExtra(vehicle, extraId, true)
+				SendNUIMessage({ type = "showToast", text = "Extra " .. extraId .. " ativado", toastType = "success" })
+			end
+			if cb then cb({ success = true }) end
+			return
+		end
+	else
+		SendNUIMessage({ type = "showToast", text = "Você precisa estar no banco do motorista", toastType = "error" })
+	end
+	if cb then cb({ success = false }) end
+end)
+RegisterNUICallback('setLivery', function(data, cb)
+	local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
+	if vehicle ~= 0 and GetPedInVehicleSeat(vehicle, -1) == PlayerPedId() then
+		local liveryId = data.id
+		SetVehicleAutoRepairDisabled(vehicle, true)
+		local currentLivery = GetVehicleLivery(vehicle)
+		if currentLivery == liveryId then
+			SetVehicleLivery(vehicle, -1)
+			SendNUIMessage({ type = "showToast", text = "Plotagem removida", toastType = "error" })
+		else
+			SetVehicleLivery(vehicle, liveryId)
+			SendNUIMessage({ type = "showToast", text = "Plotagem " .. (liveryId + 1) .. " aplicada", toastType = "success" })
+		end
+	else
+		SendNUIMessage({ type = "showToast", text = "Você precisa estar no banco do motorista", toastType = "error" })
+	end
+	if cb then cb('ok') end
+end)
+RegisterNUICallback('toggleLock', function(data, cb)
 	local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
 	if vehicle ~= 0 then
 		local lockStatus = GetVehicleDoorLockStatus(vehicle)
 		if lockStatus == 1 or lockStatus == 0 then
 			SetVehicleDoorsLocked(vehicle, 2)
-			QBCore.Functions.Notify("Veículo trancado", "success")
+			SendNUIMessage({ type = "showToast", text = "Veículo trancado", toastType = "success" })
 		else
 			SetVehicleDoorsLocked(vehicle, 1)
-			QBCore.Functions.Notify("Veículo destrancado", "success")
+			SendNUIMessage({ type = "showToast", text = "Veículo destrancado", toastType = "success" })
 		end
 	end
+	if cb then cb('ok') end
 end)
 
 
@@ -266,22 +381,22 @@ function AutopilotControl()
 	if vehicle ~= 0 and GetPedInVehicleSeat(vehicle, -1) == playerPed then
 		if autopilotActive then
 			autopilotActive = false
-			QBCore.Functions.Notify("Piloto automático desativado", "error")
+			SendNUIMessage({ type = "showToast", text = "Piloto automático desativado", toastType = "error" })
 			ClearPedTasks(playerPed)
 			SendNUIMessage({ type = "updateAutopilot", active = false })
 		else
 			if not GetIsVehicleEngineRunning(vehicle) then
-				QBCore.Functions.Notify("O motor precisa estar ligado", "error")
+				SendNUIMessage({ type = "showToast", text = "O motor precisa estar ligado", toastType = "error" })
 				return
 			end
 			
 			if not DoesBlipExist(GetFirstBlipInfoId(8)) then
-				QBCore.Functions.Notify("Você precisa marcar um destino no mapa primeiro", "error")
+				SendNUIMessage({ type = "showToast", text = "Você precisa marcar um destino no mapa primeiro", toastType = "error" })
 				return
 			end
 			
 			autopilotActive = true
-			QBCore.Functions.Notify("Piloto automático ativado", "success")
+			SendNUIMessage({ type = "showToast", text = "Piloto automático ativado", toastType = "success" })
 			
 			local blip = GetFirstBlipInfoId(8)
 			local bCoords = GetBlipCoords(blip)
@@ -304,7 +419,7 @@ function AutopilotControl()
 							local veh = GetVehiclePedIsIn(PlayerPedId(), false)
 							ClearPedTasks(PlayerPedId())
 							SetVehicleForwardSpeed(veh, 0.0) -- Force stop
-							QBCore.Functions.Notify("Destino alcançado", "success")
+							SendNUIMessage({ type = "showToast", text = "Destino alcançado", toastType = "success" })
 			SendNUIMessage({ type = "updateAutopilot", active = false })
 						end
 					end
@@ -313,7 +428,7 @@ function AutopilotControl()
 			end
 		end
 	else
-		QBCore.Functions.Notify("Você precisa estar no banco do motorista", "error")
+		SendNUIMessage({ type = "showToast", text = "Você precisa estar no banco do motorista", toastType = "error" })
 	end
 end
 

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useCarStore } from '../store/useCarStore';
 
 export const DevTools = () => {
@@ -10,7 +11,40 @@ export const DevTools = () => {
     const classes = [0, 8, 12, 17, 20]; // Test cases: Car, Moto, Van, Bus, Commercial
     const currentIndex = classes.indexOf(state.vehicleClass);
     const nextClass = classes[(currentIndex + 1) % classes.length];
-    state.updateStats({ vehicleClass: nextClass });
+    
+    // Mock doors based on class
+    const mockDoors = [
+      { index: 0, label: "Motorista", open: false },
+      { index: 1, label: "Passageiro", open: false },
+      { index: 4, label: "Capô", open: false },
+      { index: 5, label: "Porta-malas", open: false }
+    ];
+    if (nextClass !== 8) { // If not moto, add rear doors
+      mockDoors.push(
+        { index: 2, label: "Tras. Esq.", open: false },
+        { index: 3, label: "Tras. Dir.", open: false }
+      );
+    }
+    
+    state.updateStats({ 
+      vehicleClass: nextClass,
+      enableExtras: true,
+      enableLiveries: true
+    });
+    
+    state.initDoors(mockDoors);
+    
+    // Mock Extras
+    state.initExtras(Array.from({ length: 12 }, (_, i) => ({
+      id: i + 1,
+      enabled: i % 3 === 0
+    })));
+    
+    // Mock Liveries
+    state.initLiveries(Array.from({ length: 5 }, (_, i) => ({
+      id: i,
+      active: i === 0
+    })));
     
     // Auto-update seats for bus test
     if (nextClass === 17 || nextClass === 20) {
@@ -26,6 +60,13 @@ export const DevTools = () => {
       ]);
     }
   };
+
+  // Run once on mount to populate initial mock data
+  useEffect(() => {
+    if (state.doors.length === 0) {
+      toggleClass();
+    }
+  }, []);
 
   const getClassLabel = (id: number) => {
     const labels: Record<number, string> = {

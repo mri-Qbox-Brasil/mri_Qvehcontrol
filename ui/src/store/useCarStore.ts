@@ -13,9 +13,27 @@ export interface Locales {
 }
 
 export interface SeatInfo {
-  index: number; // e.g. -1 for driver, 0 for passenger, etc.
+  index: number;
   occupied: boolean;
 }
+
+export interface DoorInfo {
+  index: number;
+  label: string;
+  open: boolean;
+}
+
+export interface ExtraInfo {
+  id: number;
+  enabled: boolean;
+}
+
+export interface LiveryInfo {
+  id: number;
+  active: boolean;
+}
+
+type TabView = 'main' | 'customize';
 
 interface CarState {
   visible: boolean;
@@ -35,10 +53,20 @@ interface CarState {
   // Dynamic UI state
   doorsOpen: number[];
   doorsLocked: boolean;
-  seats: SeatInfo[]; // Dynamically passed from Lua based on vehicle
+  seats: SeatInfo[];
+  doors: DoorInfo[];
+  extras: ExtraInfo[];
+  liveries: LiveryInfo[];
+  
+  // Feature flags
+  enableExtras: boolean;
+  enableLiveries: boolean;
+  
+  // Tab navigation
+  activeTab: TabView;
   
   // Settings
-  positionType: string; // 'center', 'top-right', 'bottom-right', 'center-left', 'center-right', 'custom'
+  positionType: string;
   customX: number;
   customY: number;
   isAdmin: boolean;
@@ -54,6 +82,13 @@ interface CarState {
   toggleDoor: (doorIndex: number) => void;
   updateSeats: (seats: SeatInfo[]) => void;
   setPosition: (type: string, x?: number, y?: number) => void;
+  initDoors: (doors: { index: number; label: string; open: boolean }[]) => void;
+  updateDoorStates: (doors: { index: number; open: boolean }[]) => void;
+  initExtras: (extras: ExtraInfo[]) => void;
+  toggleExtra: (id: number) => void;
+  initLiveries: (liveries: LiveryInfo[]) => void;
+  setActiveLivery: (id: number) => void;
+  setActiveTab: (tab: TabView) => void;
 }
 
 export const useCarStore = create<CarState>((set) => ({
@@ -77,11 +112,17 @@ export const useCarStore = create<CarState>((set) => ({
   doorsOpen: [],
   doorsLocked: false,
   seats: [
-    { index: -1, occupied: false }, // Driver
-    { index: 0, occupied: false },  // Pass
-    { index: 1, occupied: false },  // Rear L
-    { index: 2, occupied: false }   // Rear R
+    { index: -1, occupied: false },
+    { index: 0, occupied: false },
+    { index: 1, occupied: false },
+    { index: 2, occupied: false }
   ],
+  doors: [],
+  extras: [],
+  liveries: [],
+  enableExtras: false,
+  enableLiveries: false,
+  activeTab: 'main',
   positionType: 'center-right',
   customX: 0,
   customY: 0,
@@ -90,7 +131,7 @@ export const useCarStore = create<CarState>((set) => ({
   hasHood: true,
   hasTrunk: true,
 
-  setVisible: (v) => set({ visible: v }),
+  setVisible: (v) => set({ visible: v, activeTab: v ? 'main' : 'main' }),
   updateStats: (data) => set((state) => ({ ...state, ...data })),
   setLocales: (locales) => set({ locales }),
   toggleHazard: () => set((state) => ({ hazardActive: !state.hazardActive })),
@@ -103,5 +144,24 @@ export const useCarStore = create<CarState>((set) => ({
     };
   }),
   updateSeats: (seats) => set({ seats }),
-  setPosition: (type, x = 0, y = 0) => set({ positionType: type, customX: x, customY: y })
+  setPosition: (type, x = 0, y = 0) => set({ positionType: type, customX: x, customY: y }),
+  initDoors: (doors) => set({ doors: doors.map(d => ({ index: d.index, label: d.label, open: d.open })) }),
+  updateDoorStates: (doors) => set((state) => ({
+    doors: state.doors.map(d => {
+      const updated = doors.find(u => u.index === d.index);
+      return updated ? { ...d, open: updated.open } : d;
+    })
+  })),
+  initExtras: (extras) => set({ extras }),
+  toggleExtra: (id) => set((state) => ({
+    extras: state.extras.map(e => e.id === id ? { ...e, enabled: !e.enabled } : e)
+  })),
+  initLiveries: (liveries) => set({ liveries }),
+  setActiveLivery: (id) => set((state) => ({
+    liveries: state.liveries.map(l => ({
+      ...l,
+      active: l.id === id ? !l.active : false
+    }))
+  })),
+  setActiveTab: (tab) => set({ activeTab: tab }),
 }))
