@@ -110,7 +110,3 @@ npm install
 npm run dev     # Dev server com hot reload
 npm run build   # Build de produção
 ```
-
-## 📄 Licença
-
-Copyright 2020 Manvaril — [GNU GPL v3](https://www.gnu.org/licenses/)
