@@ -1,118 +1,116 @@
-# VehControl FlavyV Re-Edit | VehControl NUI Menu
+# mri_Qvehcontrol | Vehicle Control NUI Panel | QBX
 
-# To Change Resource Name
-  > Replace fv-vehcontrol in vehui.html with your name you want to name it
+> Painel NUI moderno para controle de veículos no FiveM, construído com **React + TypeScript + Vite**.
 
-# Use For Radial Menu 
+## 📌 TODO
 
-      {
-         id = 'openmenu',
-         title = 'Open Control Menu',
-         icon = 'car',
-         type = 'client',
-         event = 'vehcontrol:openExternal',
-         shouldClose = true
-      },
+- [ ] Implementar controle individual de janelas na NUI (atualmente só temos toggle de todas as janelas de uma vez, falta controle por janela: Motorista, Passageiro, Tras. Esq., Tras. Dir.)
 
-# NUI visual menu vehicle script for FiveM
+## ✨ Features
 
-![image](https://i.imgur.com/9thToV6.png)
+- **React NUI** — Interface moderna com componentes React, substituindo o HTML/jQuery legado
+- **Painel de Controle** — Hood, Trunk, Motor, Luz Interior, Autopiloto
+- **Portas** — Grid interativo com visualização top-down do veículo
+- **Janelas** — Controle individual por janela
+- **Assentos** — Troca de assento com indicação de ocupação em tempo real
+- **Extras** — Toggle dinâmico de extras do veículo (detecta automaticamente os disponíveis)
+- **Liveries/Plotagens** — Seletor de plotagens com indicação da ativa
+- **Autopiloto** — Define waypoint e o veículo dirige automaticamente
+- **Leave Engine Running** — Motor continua ligado ao sair com F longo
+- **3D Viewer** — Visualizador 3D do veículo (configurável)
+- **Design System** — Dark glassmorphic cyberpunk com Inter font
 
-## Features
 
-* Control
-    - Hood
-    - Trunk
-    - Doors
-    - Windows
-    - Interior Light
-    - Change Seats
-    - Leave Engine Running on Exit
+## 📂 Estrutura
 
-## NUI Controls
+```
+mri_Qvehcontrol/
+├── client.lua          # Lógica client-side (NUI open/close, vehicle data)
+├── server.lua          # Lógica server-side (sync)
+├── config.lua          # Configurações gerais
+├── 3d_viewer.lua       # Visualizador 3D opcional
+├── fxmanifest.lua      # Manifest do resource
+└── ui/                 # React NUI Application
+    ├── src/
+    │   ├── components/
+    │   │   ├── Dashboard.tsx      # Painel principal
+    │   │   ├── VehicleGrid.tsx    # Grid de portas/janelas
+    │   │   ├── ExtrasPanel.tsx    # Painel de extras + liveries
+    │   │   ├── Toast.tsx          # Notificações
+    │   │   └── DevTools.tsx       # Ferramentas de desenvolvimento
+    │   ├── App.tsx
+    │   └── main.tsx
+    └── dist/           # Build de produção (servido pelo FiveM)
+```
 
-**Open** - Script Default: HOME
+## ⚙️ Configuração
 
-- Script Default can be changed via config
+```lua
+-- config.lua
+UseCommands = true                    -- Habilitar /commands
+DisableSeatShuffle = true             -- Impedir troca automática de assento
+LeaveRunning = true                   -- Motor ligado ao sair com F longo
 
-- Client changeable via Settings->Keybinds->FiveM game menu
+Config.EnableAutopilot = true         -- Habilitar autopiloto
+Config.Enable3DViewer = false         -- Visualizador 3D
+Config.AutopilotArriveDistance = 15.0 -- Distância de parada do autopiloto
+Config.NormalSpeed = 20.0             -- Velocidade do autopiloto
 
-**Close** - ESC
+Config.EnableExtras = true            -- Painel de extras
+Config.EnableLiveries = true          -- Painel de liveries/plotagens
+```
 
-## Commands
+## 🔗 Integração com QBX Radial Menu
 
-**/engine** - Start/Stop Vehicle Engine
+### Via qbx_radialmenu (recomendado)
 
-**/hood** - Open/Close Hood
+O `qbx_radialmenu` já integra o vehcontrol automaticamente. O botão "Veículo" no radial abre diretamente o painel:
 
-**/trunk** - Open/Close Trunk
+```lua
+-- Já configurado no qbx_radialmenu/client/main.lua
+TriggerEvent('vehcontrol:openExternal')
+```
 
-**/seat** [1-4]- Move Seat
+### Via export
 
-**/door** [1-4] - Open/Close Door
+```lua
+exports.mri_Qvehcontrol:openExternal()
+```
 
-**/window** [1-4] - Roll Up/Down Window
+### Via evento
 
-**/windowfront** - Roll Up/Down Front Windows
+```lua
+TriggerEvent('vehcontrol:openExternal')
+```
 
-**/windowback** - Roll Up/Down Back Windows
+### Via comando
 
-**/windowall** - Roll Up/Down All Windows
+```
+/vehcontrol
+```
 
-**/vehcontrolclose** - Close NUI (in F8 if stuck open)
+## 🔑 Controles
 
-## Config
-UseCommands [true/false] - Allow the use of /commands
+| Ação | Tecla |
+|---|---|
+| Abrir painel | HOME (configurável) |
+| Fechar painel | ESC |
 
-DisableSeatShuffle [true/false] - Allow auto-seat shuffle from passenger to driver
+## 📝 Comandos
 
-LeaveRunning [true/false] - Allow the engine to keep running on exit of the vehicle with a long F keypress
+| Comando | Descrição |
+|---|---|
+| `/vehcontrol` | Abrir painel de controle do veículo |
 
-DefaultOpen - This is they default key to open the menu, client can change in the game menu (Settings->Key Binds->FiveM)
+## 🏗️ Desenvolvimento
 
-- USABLE KEY LIST https://docs.fivem.net/docs/game-references/input-mapper-parameter-ids/keyboard/
+```bash
+cd ui
+npm install
+npm run dev     # Dev server com hot reload
+npm run build   # Build de produção
+```
 
-## Exporting and Events
+## 📄 Licença
 
-The following ways can be used to open the menu from another resource depending on how the resource is coded
-
-Open menu from another resource with exports
->```exports.vehcontrol:openExternal()```
-
-Open menu from another resource with events
->```TriggerEvent("vehcontrol:openExternal")```
-
-## TODO
-
-** Nothing So Far **
-
-Feature request can be made [Here](https://github.com/Flaruto/fv-vehcontrol/issues/new)
-
-## Changelog
-
-** Nothing So Far **
-
-## Bug
-
-** Nothing So Far **
-
-## Original 
-
-https://github.com/Manvaril/vehcontrol
-
-## License
-
-Copyright 2020 Manvaril
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
+Copyright 2020 Manvaril — [GNU GPL v3](https://www.gnu.org/licenses/)
